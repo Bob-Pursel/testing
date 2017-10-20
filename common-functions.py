@@ -37,3 +37,12 @@ def sendSuccessEmail(msgText, fileName):
     s.send_message(msg)
     del msg
 
+def fileProcessed(fileNum, logNum, numRecs, asOfDate):
+    currDate = datetime.datetime.now()
+    conn = getVerticaConnection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO files_processed (rec_num, file_num, log_num, num_records, processed_date) VALUES (files_processed_seq.nextval, {0}, {1}, {2}, {3}, {4})".format(fileNum, logNum, numRecs, currDate, asOfDate)
+    conn.commit()
+    conn.close()
+
+
