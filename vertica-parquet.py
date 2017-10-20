@@ -27,8 +27,11 @@ cur = connection.cursor()
 try:
     if os.stat(stagename):
         shutil.rmtree(stagename)
-except:
+except FileNotFoundError:
     pass
+except:
+    print("Error Removing Parquet Stage Directory {0}".format(stagedir))
+    raise
 
 # Write parquet files in stage directory from Vertica table
 try:
