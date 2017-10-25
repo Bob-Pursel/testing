@@ -2,12 +2,19 @@ import sys
 import os
 import vertica_python
 import shutil
+import logging
+import logging.config
 #import subprocess
 
 dirname = sys.argv[1]
 tablename = sys.argv[2]
 parquet_table = sys.argv[3]
 stagename = dirname + '-stage'
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger("testApp")
+
+logger.info("Start export to parquet {0}".format(parquet_table))
 
 # Define connection to Vertica
 conn_info = {'host':'172.25.4.115', 'port':5433, 'user':'dbadmin','password':'dbadmin','database':'dwp1','read_timeout':600,'unicode_error':'strict','ssl':False,'connection_timeout':10}
@@ -30,14 +37,14 @@ try:
 except FileNotFoundError:
     pass
 except:
-    print("Error Removing Parquet Stage Directory {0}".format(stagedir))
+    logger.error("Error Removing Parquet Stage Directory {0}".format(stagedir), exc_info=True)
     raise
 
 # Write parquet files in stage directory from Vertica table
 try:
-    cur.execute("EXPORT TO PARQUET(directory='{0}') AS SELECT * FROM {1}".format(stagename, tablename))
+    cur.execute("EXPORT TO PARQUET(directory='{0}') AS SELECT * FROM {1}".format(stagename, tablename), exc_info=True))
 except:
-    print("Error on Export to Parquet {0} {1}".format(stagename, tablename))
+    logger.error("Error on Export to Parquet {0} {1}".format(stagename, tablename), exc_info=True))
     raise
 
 #try:
@@ -54,23 +61,25 @@ try:
         dst_file = os.path.join(dirname, name)
         shutil.move(src_file, dst_file)
 except:
-    print("Error when moving parquet file {0} {1}".format(stagename, dirname))
+    logger.error("Error when moving parquet file {0} {1}".format(stagename, dirname), exc_info=True))
     raise
 
 # Truncate native Vertica table data
 try:
     cur.execute("TRUNCATE TABLE {0}".format(tablename))
 except:
-    print("Error on Truncate Table {0}".format(tablename))
+    logger.error("Error on Truncate Table {0}".format(tablename), exc_info=True))
     raise
 
 # Run Analyze for external table to see new parquet files
 try:
     cur.execute("SELECT ANALYZE_STATISTICS ('{0}')".format(parquet_table))
 except:
-    print("Error on Anylyze Table {0}".format(parquet_table))
+    logger.error("Error on Anylyze Table {0}".format(parquet_table), exc_info=True))
     raise
 
 # Cleanup
 connection.commit()
 connection.close()
+
+logger.info("End export to parquet {0}".format(parquet_table))

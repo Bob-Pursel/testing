@@ -2,6 +2,11 @@ import vertica_python
 import sys
 import os
 import datetime
+import logger
+import logger.config
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger("testApp")
 
 # Vertica connection
 def createVeticaConnection():
